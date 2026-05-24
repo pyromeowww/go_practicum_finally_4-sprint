@@ -33,6 +33,9 @@ func parseTraining(data string) (int, string, time.Duration, error) {
 	if err != nil {
 		return 0, "", 0, fmt.Errorf("invalid data format: %w", err)
 	}
+	if duration <= 0 {
+		return 0, "", 0, fmt.Errorf("invalid data format: duration must be positive")
+	}
 	return steps, parts[1], duration, nil
 }
 
@@ -62,22 +65,39 @@ func TrainingInfo(data string, weight, height float64) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Вычисляем общие метрики
+	dist := distance(steps, height)
+	speed := meanSpeed(steps, height, duration)
+	durationHours := duration.Hours()
+
+	var calories float64
 	switch activity {
-	case "running":
-		calories, err := RunningSpentCalories(steps, weight, height, duration)
+	case "Бег":
+		cal, err := RunningSpentCalories(steps, weight, height, duration)
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%.2f", calories), nil
-	case "walking":
-		calories, err := WalkingSpentCalories(steps, weight, height, duration)
+		calories = cal
+	case "Ходьба":
+		cal, err := WalkingSpentCalories(steps, weight, height, duration)
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%.2f", calories), nil
+		calories = cal
 	default:
-		return "", fmt.Errorf("invalid activity: %s", activity)
+		return "", fmt.Errorf("неизвестный тип тренировки: %s", activity)
 	}
+
+	// Форматируем вывод согласно тестам
+	return fmt.Sprintf(
+		"Тип тренировки: %s\nДлительность: %.2f ч.\nДистанция: %.2f км.\nСкорость: %.2f км/ч\nСожгли калорий: %.2f\n",
+		activity,
+		durationHours,
+		dist,
+		speed,
+		calories,
+	), nil
 }
 
 func RunningSpentCalories(steps int, weight, height float64, duration time.Duration) (float64, error) {
